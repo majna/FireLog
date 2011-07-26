@@ -15,9 +15,11 @@ App::uses('CakeLogInterface', 'Log');
  * Usage:
  *
  * {{{
- * CakeLog::config('fire', array('engine' => 'FireLog.FireLog'));
+ * CakeLog::config('fire', array(
+ * 		'engine' => 'FireLog.FireLog',
+ * 		'logTypes' => array('warrning', 'error')
+ * ));
  * }}}
- *
  */
 class FireLog implements CakeLogInterface {
 	/**
@@ -61,7 +63,28 @@ class FireLog implements CakeLogInterface {
 		'warning' => 'WARN',
 		'error' => 'ERROR',
 	);
+	/**
+	 * Default options for logger
+	 * 
+	 * - emailConfig - One of configured EmailConfig. See app/Config/email.php.
+	 * - subjectFormat - Email subject format using available params.
+	 * - logTypes - List of log types to process (all by default). Array of log types like 'debug', 'warrning'. 'info'.
+	 * @var array
+	 */
+	protected $_options = array(
+		'logTypes' => array()
+	);
 
+	/**
+	 * Merge options
+	 * 
+	 * @param array $options Options for logger
+	 * @return void
+	 */
+	function __construct($options = array()) {
+		$this->_options = array_merge($this->_options, $options);
+	}
+	
 	/**
 	 * Creates & sends header for a record, ensuring init headers have been sent prior
 	 *
@@ -70,6 +93,10 @@ class FireLog implements CakeLogInterface {
 	 * @return boolean success of write.
 	 */
 	public function write($type, $message) {
+		if (!empty($this->_options['logTypes']) && !in_array($type, $this->_options['logTypes'])) {
+			return false;
+		}
+		
 		if (php_sapi_name() == 'cli' || !isset($_SERVER['REQUEST_URI'])) {
 			return false;
 		}
